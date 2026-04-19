@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
 <link rel="apple-touch-icon" href="icon-192.png" />
-<title>Calculadora · Joyería Aravena</title>
+<title>Ventas Presenciales · Joyería Aravena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&display=swap" rel="stylesheet" />
@@ -333,8 +333,9 @@
   @media (min-width: 520px){ .ptable-name{ font-size:15.5px; } }
   .ptable-name .mat{font-family:var(--mono);font-weight:500;font-size:10px;color:var(--gold-2);letter-spacing:.15em;flex-shrink:0}
   .ptable-grid{
-    display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
+    display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
   }
+  @media (min-width: 520px){ .ptable-grid{ gap:6px; } }
   .ptable-cell{
     padding:8px 4px;border-radius:6px;
     background:rgba(10,9,7,.4);
@@ -451,13 +452,13 @@
 
 <script type="application/json" id="default-prices">
 {
-  "collar_pulsera_mujer_925": { "name": "Collares/pulseras mujer SL925", "material": "SL925", "prices": [1800, 1650, 1500, 1350] },
-  "collar_pulsera_hombre_925": { "name": "Collares/pulseras hombre SL925", "material": "SL925", "prices": [1700, 1550, 1400, 1250] },
-  "aros_colgantes_925": { "name": "Aros y colgantes SL925", "material": "SL925", "prices": [2000, 1850, 1700, 1550] },
-  "anillos_925": { "name": "Anillos SL925", "material": "SL925", "prices": [2200, 2050, 1900, 1750] },
-  "collar_pulsera_micro": { "name": "Collares/pulseras micro", "material": "Micro", "prices": [2500, 2300, 2100, 1950] },
-  "italiana_925": { "name": "Italiana 925", "material": "925", "prices": [2800, 2600, 2400, 2200] },
-  "gf_18k": { "name": "GF 18K", "material": "GF 18K", "prices": [4500, 4200, 3900, 3600] }
+  "collar_pulsera_mujer_925": { "name": "Collares/pulseras mujer SL925", "material": "SL925", "prices": [3600, 1800, 1650, 1500, 1350] },
+  "collar_pulsera_hombre_925": { "name": "Collares/pulseras hombre SL925", "material": "SL925", "prices": [3400, 1700, 1550, 1400, 1250] },
+  "aros_colgantes_925": { "name": "Aros y colgantes SL925", "material": "SL925", "prices": [6000, 2000, 1850, 1700, 1550] },
+  "anillos_925": { "name": "Anillos SL925", "material": "SL925", "prices": [6600, 2200, 2050, 1900, 1750] },
+  "collar_pulsera_micro": { "name": "Collares/pulseras micro", "material": "Micro", "prices": [5000, 2500, 2300, 2100, 1950] },
+  "italiana_925": { "name": "Italiana 925", "material": "925", "prices": [5600, 2800, 2600, 2400, 2200] },
+  "gf_18k": { "name": "GF 18K", "material": "GF 18K", "prices": [9000, 4500, 4200, 3900, 3600] }
 }
 </script>
 
@@ -481,15 +482,22 @@ const DEFAULT_PRICES = JSON.parse(document.getElementById('default-prices').text
 const CATEGORY_ORDER = Object.keys(DEFAULT_PRICES);
 
 const TIER_RULES = [
-  { label: "I",   min: 0,       desc: "Hasta $30.000" },
-  { label: "II",  min: 30001,   desc: "Supera $30.000" },
-  { label: "III", min: 100001,  desc: "Supera $100.000 o 500g+" },
-  { label: "IV",  min: Infinity, desc: "Supera 1.000g" },
+  { label: "0",   desc: "Hasta $30.000" },
+  { label: "I",   desc: "Supera $30.000" },
+  { label: "II",  desc: "Supera $100.000" },
+  { label: "III", desc: "Supera 500g" },
+  { label: "IV",  desc: "Supera 1.000g" },
 ];
 
 const LS_HISTORY = "joya.history.v1";
-const LS_PRICES  = "joya.prices.v1";
+const LS_PRICES  = "joya.prices.v2";
 const LS_TAB     = "joya.tab.v1";
+const LS_PAGO    = "joya.pago.v1";
+const LS_ATEN    = "joya.atencion.v1";
+const LS_AGENDA  = "joya.agenda.v1";
+const LS_AUTH    = "joya.auth.v1";
+
+const APP_PASSWORD = "aravena2026";
 
 // ---------- Utils ----------
 const fmtCLP = (n) => {
@@ -503,69 +511,90 @@ const fmtDate = (t) => {
 };
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-// Compute tier given total price and total weight. 0-indexed.
-function tierFor(total, weight){
-  if (weight > 1000) return 3;
-  if (weight > 500) return 2;
-  if (total > 100000) return 2;
-  if (total > 30000) return 1;
-  return 0;
-}
-
-// Iteratively converge on a tier. Total depends on tier which depends on total.
-// Strategy: for each possible tier t, compute total at tier t and check if the
-// resulting rule gives back t. Take the HIGHEST t that is self-consistent.
-// If none is self-consistent, the rules produce a cascade — fall back to the
-// tier the total at tier 0 points to.
+// Index map: 0=T-0 (≤$30k), 1=T-I (>$30k), 2=T-II (>$100k), 3=T-III (>500g), 4=T-IV (>1000g)
+// Tier is decided from weight and from the baseline total at T-I prices; then the
+// final total is computed at the chosen tier's prices.
 function computeTotals(lines, prices){
   const totalWeight = lines.reduce((s,l) => s + (Number(l.grams)||0), 0);
 
-  // Weight-based overrides: if weight > 1000, tier 3; if >500, tier 2 (but may bump higher if price suggests).
-  let weightTier = 0;
-  if (totalWeight > 1000) weightTier = 3;
-  else if (totalWeight > 500) weightTier = 2;
+  const baselineTotal = lines.reduce((s,l) => {
+    const cat = prices[l.category];
+    if (!cat) return s;
+    return s + (cat.prices[1]||0) * (Number(l.grams)||0);
+  }, 0);
 
-  // Try tiers from 3 down to 0 looking for self-consistency.
-  let chosen = null;
-  for (let t = 3; t >= 0; t--) {
-    const total = lines.reduce((s,l) => {
-      const cat = prices[l.category];
-      if (!cat) return s;
-      const price = cat.prices[t] || 0;
-      return s + price * (Number(l.grams)||0);
-    }, 0);
-    const derived = tierFor(total, totalWeight);
-    // Tier is the max of weight and price rules
-    const effective = Math.max(derived, weightTier);
-    if (effective === t) { chosen = { tier: t, total }; break; }
-  }
-  if (!chosen) {
-    // Fallback: use tier 0 pricing then map
-    const total0 = lines.reduce((s,l) => {
-      const cat = prices[l.category];
-      if (!cat) return s;
-      return s + (cat.prices[0]||0) * (Number(l.grams)||0);
-    }, 0);
-    const t = Math.max(tierFor(total0, totalWeight), weightTier);
-    const total = lines.reduce((s,l) => {
-      const cat = prices[l.category];
-      if (!cat) return s;
-      return s + (cat.prices[t]||0) * (Number(l.grams)||0);
-    }, 0);
-    chosen = { tier: t, total };
-  }
+  let tier;
+  if (totalWeight > 1000) tier = 4;
+  else if (totalWeight > 500) tier = 3;
+  else if (baselineTotal > 100000) tier = 2;
+  else if (baselineTotal > 30000) tier = 1;
+  else tier = 0;
 
-  // Reason string
+  const total = lines.reduce((s,l) => {
+    const cat = prices[l.category];
+    if (!cat) return s;
+    return s + (cat.prices[tier]||0) * (Number(l.grams)||0);
+  }, 0);
+
   let reason;
-  const t = chosen.tier;
   if (totalWeight > 1000) reason = `Peso total ${fmtCLP(totalWeight)}g supera 1.000g`;
-  else if (totalWeight > 500 && t >= 2) reason = `Peso total ${fmtCLP(totalWeight)}g supera 500g`;
-  else if (t === 3) reason = `Total supera $100.000 con peso ≥ 500g`;
-  else if (t === 2) reason = `Total supera $100.000`;
-  else if (t === 1) reason = `Total supera $30.000`;
-  else reason = `Total hasta $30.000`;
+  else if (totalWeight > 500) reason = `Peso total ${fmtCLP(totalWeight)}g supera 500g`;
+  else if (tier === 2) reason = `Venta supera $100.000`;
+  else if (tier === 1) reason = `Venta supera $30.000`;
+  else reason = `Venta hasta $30.000 (sin descuento)`;
 
-  return { ...chosen, totalWeight, reason };
+  return { tier, total, totalWeight, reason };
+}
+
+// ---------- Login ----------
+function LoginScreen({ onAuth }){
+  const [pwd, setPwd] = useState("");
+  const [err, setErr] = useState(false);
+  const submit = (e) => {
+    e.preventDefault();
+    if (pwd === APP_PASSWORD) {
+      sessionStorage.setItem(LS_AUTH, "1");
+      onAuth();
+    } else {
+      setErr(true);
+      setPwd("");
+    }
+  };
+  return (
+    <div className="app">
+      <header className="brand">
+        <div className="mark" aria-hidden>◆</div>
+        <div>
+          <h1>Joyería <em>Aravena</em></h1>
+          <div className="sub">Ventas Presenciales</div>
+        </div>
+      </header>
+      <div className="card" style={{marginTop:20}}>
+        <div className="card-head">
+          <h2>Acceso <em>restringido</em></h2>
+          <span className="eyebrow">Ingresa tu clave</span>
+        </div>
+        <form onSubmit={submit} className="client" style={{padding:"18px 16px 20px"}}>
+          <div className="control-labeled">
+            <label>Contraseña</label>
+            <div className="control" style={err ? {borderColor:"var(--danger)"} : null}>
+              <input
+                type="password"
+                autoFocus
+                value={pwd}
+                onChange={e => { setPwd(e.target.value); setErr(false); }}
+                placeholder="••••••••"
+              />
+            </div>
+            {err && <span style={{color:"var(--danger)",fontSize:12,marginTop:4,fontFamily:"var(--mono)"}}>Clave incorrecta</span>}
+          </div>
+          <div className="actions" style={{marginTop:16}}>
+            <button type="submit" className="btn accent" style={{flex:1}}>Entrar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 // ---------- Icons ----------
@@ -587,17 +616,36 @@ const Icon = ({ name, size=16 }) => {
 
 // ---------- App ----------
 function App(){
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem(LS_AUTH) === "1");
+
   const [tab, setTab] = useState(() => localStorage.getItem(LS_TAB) || 'calc');
   const [prices, setPrices] = useState(() => {
-    try { const s = localStorage.getItem(LS_PRICES); if (s) return JSON.parse(s); } catch(e){}
+    try { const s = localStorage.getItem(LS_PRICES); if (s) {
+      const parsed = JSON.parse(s);
+      const first = parsed[CATEGORY_ORDER[0]];
+      if (first && Array.isArray(first.prices) && first.prices.length === 5) return parsed;
+    } } catch(e){}
     return DEFAULT_PRICES;
   });
   const [history, setHistory] = useState(() => {
-    try { const s = localStorage.getItem(LS_HISTORY); if (s) return JSON.parse(s); } catch(e){}
+    try {
+      const s = localStorage.getItem(LS_HISTORY);
+      if (!s) return [];
+      const parsed = JSON.parse(s);
+      if (!localStorage.getItem("joya.history.migrated.v2")) {
+        const migrated = parsed.map(h => ({ ...h, tier: (h.tier || 0) + 1 }));
+        localStorage.setItem("joya.history.migrated.v2", "1");
+        return migrated;
+      }
+      return parsed;
+    } catch(e){}
     return [];
   });
 
   const [clientName, setClientName] = useState("");
+  const [pago, setPago] = useState(() => localStorage.getItem(LS_PAGO) || "");
+  const [atencion, setAtencion] = useState(() => localStorage.getItem(LS_ATEN) || "");
+  const [agenda, setAgenda] = useState(() => localStorage.getItem(LS_AGENDA) || "");
   const [lines, setLines] = useState([
     { id: uid(), category: CATEGORY_ORDER[0], grams: "" }
   ]);
@@ -627,6 +675,9 @@ function App(){
   useEffect(() => { localStorage.setItem(LS_TAB, tab); }, [tab]);
   useEffect(() => { localStorage.setItem(LS_PRICES, JSON.stringify(prices)); }, [prices]);
   useEffect(() => { localStorage.setItem(LS_HISTORY, JSON.stringify(history)); }, [history]);
+  useEffect(() => { localStorage.setItem(LS_PAGO, pago); }, [pago]);
+  useEffect(() => { localStorage.setItem(LS_ATEN, atencion); }, [atencion]);
+  useEffect(() => { localStorage.setItem(LS_AGENDA, agenda); }, [agenda]);
 
   const totals = useMemo(() => computeTotals(lines, prices), [lines, prices]);
 
@@ -639,30 +690,35 @@ function App(){
     setClientName("");
   };
 
+  const logout = () => {
+    sessionStorage.removeItem(LS_AUTH);
+    setAuthed(false);
+  };
+
   const hasValidLines = lines.some(l => Number(l.grams) > 0);
 
-  const copyMessage = async () => {
+  const buildMessage = () => {
     const validLines = lines.filter(l => Number(l.grams) > 0);
-    if (validLines.length === 0) return;
+    if (validLines.length === 0) return "";
     const piezas = validLines.map(l => {
       const name = prices[l.category]?.name || l.category;
-      return `- ${name}: ${l.grams}g`;
+      return `${l.grams} | ${name}`;
     }).join('\n');
-    const msg =
-`Pago: Benjamín
-Atención: 
-Agenda: 
+    return `Pago: ${pago.trim()}
+Atención: ${atencion.trim()}
+Agenda: ${agenda.trim()}
 Nombre Cliente: ${clientName.trim()}
-
-Joyas:
 ${piezas}
-
 Venta: $${fmtCLP(totals.total)}`;
+  };
+
+  const copyMessage = async () => {
+    const msg = buildMessage();
+    if (!msg) return;
     try {
       await navigator.clipboard.writeText(msg);
       showToast("¡Mensaje copiado!");
     } catch (e) {
-      // fallback
       const ta = document.createElement('textarea');
       ta.value = msg; document.body.appendChild(ta); ta.select();
       try { document.execCommand('copy'); showToast("¡Mensaje copiado!"); } catch(_){ showToast("No se pudo copiar"); }
@@ -715,19 +771,24 @@ Total: $${fmtCLP(q.total)} CLP`;
     window.open(url, '_blank');
   };
 
+  if (!authed) return <LoginScreen onAuth={() => setAuthed(true)} />;
+
   return (
     <div className="app">
       <header className="brand">
         <div className="mark" aria-hidden>◆</div>
-        <div>
+        <div style={{flex:1}}>
           <h1>Joyería <em>Aravena</em></h1>
-          <div className="sub">Calculadora · Cotizaciones</div>
+          <div className="sub">Ventas Presenciales</div>
         </div>
+        <button className="icon-btn" onClick={logout} aria-label="Cerrar sesión" title="Cerrar sesión">
+          <Icon name="x" size={14}/>
+        </button>
       </header>
 
       <nav className="tabs" role="tablist">
         <button className="tab" role="tab" aria-selected={tab==='calc'} onClick={()=>setTab('calc')}>
-          <Icon name="calc" size={14}/> Calculadora
+          <Icon name="calc" size={14}/> Venta
         </button>
         <button className="tab" role="tab" aria-selected={tab==='hist'} onClick={()=>setTab('hist')}>
           <Icon name="clock" size={14}/> Historial
@@ -740,6 +801,9 @@ Total: $${fmtCLP(q.total)} CLP`;
       {tab === 'calc' && (
         <CalcTab
           clientName={clientName} setClientName={setClientName}
+          pago={pago} setPago={setPago}
+          atencion={atencion} setAtencion={setAtencion}
+          agenda={agenda} setAgenda={setAgenda}
           lines={lines} prices={prices}
           addLine={addLine} removeLine={removeLine} updateLine={updateLine}
           totals={totals} resetCalc={resetCalc} saveQuote={saveQuote}
@@ -759,19 +823,7 @@ Total: $${fmtCLP(q.total)} CLP`;
       <div className={"toast" + (toast ? " show" : "")}>{toast}</div>
 
       {tab === 'calc' && (
-        <button className="fab" onClick={() => {
-          const validLines = lines.filter(l => Number(l.grams) > 0);
-          if (validLines.length === 0) return;
-          const piezas = validLines.map(l => {
-            const name = prices[l.category]?.name || l.category;
-            return `- ${name}: ${l.grams}g`;
-          }).join('\n');
-          const msg = `Pago: Benjamín\nAtención: \nAgenda: \nNombre Cliente: ${clientName.trim()}\n\nJoyas:\n${piezas}\n\nVenta: $${fmtCLP(totals.total)}`;
-          navigator.clipboard.writeText(msg).then(
-            () => showToast("¡Mensaje copiado!"),
-            () => showToast("No se pudo copiar")
-          );
-        }} disabled={!lines.some(l => Number(l.grams) > 0)}>
+        <button className="fab" onClick={copyMessage} disabled={!hasValidLines}>
           <span className="ico">📋</span> Copiar mensaje
         </button>
       )}
@@ -782,24 +834,61 @@ Total: $${fmtCLP(q.total)} CLP`;
 }
 
 // ---------- Calculator Tab ----------
-function CalcTab({ clientName, setClientName, lines, prices, addLine, removeLine, updateLine, totals, resetCalc, saveQuote, copyMessage, canCopy }){
+function CalcTab({ clientName, setClientName, pago, setPago, atencion, setAtencion, agenda, setAgenda, lines, prices, addLine, removeLine, updateLine, totals, resetCalc, saveQuote, copyMessage, canCopy }){
   return (
     <div className="fade-in">
       <div className="card">
         <div className="card-head">
-          <h2>Cliente <em>&amp;</em> piezas</h2>
+          <h2>Detalles de <em>venta</em></h2>
           <span className="eyebrow">N.º {lines.length}</span>
         </div>
         <div className="client">
-          <div className="control-labeled">
-            <label>Nombre del cliente (opcional)</label>
-            <div className="control">
-              <input
-                type="text"
-                value={clientName}
-                onChange={e => setClientName(e.target.value)}
-                placeholder="Ej. María Fernández"
-              />
+          <div className="client-row">
+            <div className="control-labeled">
+              <label>A quién le pago</label>
+              <div className="control">
+                <input
+                  type="text"
+                  value={pago}
+                  onChange={e => setPago(e.target.value)}
+                  placeholder="Ej. Benjamín"
+                />
+              </div>
+            </div>
+            <div className="control-labeled">
+              <label>Atención</label>
+              <div className="control">
+                <input
+                  type="text"
+                  value={atencion}
+                  onChange={e => setAtencion(e.target.value)}
+                  placeholder="Ej. Christopher"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="client-row" style={{marginTop:10}}>
+            <div className="control-labeled">
+              <label>Agenda</label>
+              <div className="control">
+                <input
+                  type="text"
+                  value={agenda}
+                  onChange={e => setAgenda(e.target.value)}
+                  placeholder="Ej. Diego"
+                />
+              </div>
+            </div>
+            <div className="control-labeled">
+              <label>Nombre del cliente (opcional)</label>
+              <div className="control">
+                <input
+                  type="text"
+                  value={clientName}
+                  onChange={e => setClientName(e.target.value)}
+                  placeholder="Ej. María Fernández"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -1033,9 +1122,10 @@ function PricesTab({ prices, setPrices, activeTier }){
         <div className="tiers-legend">
           <h3>Reglas de tramo</h3>
           <ul>
-            <li><span className="t">T-I</span><span>Compra hasta $30.000</span></li>
-            <li><span className="t">T-II</span><span>Compra supera $30.000</span></li>
-            <li><span className="t">T-III</span><span>Compra supera $100.000 · o peso supera 500g</span></li>
+            <li><span className="t">T-0</span><span>Compra hasta $30.000 (sin descuento)</span></li>
+            <li><span className="t">T-I</span><span>Compra supera $30.000</span></li>
+            <li><span className="t">T-II</span><span>Compra supera $100.000</span></li>
+            <li><span className="t">T-III</span><span>Peso supera 500g</span></li>
             <li><span className="t">T-IV</span><span>Peso supera 1.000g</span></li>
           </ul>
         </div>
@@ -1071,7 +1161,7 @@ function TweaksPanel({ prices, setPrices, onClose }){
             {CATEGORY_ORDER.map(k => <option key={k} value={k}>{prices[k].name}</option>)}
           </select>
         </div>
-        {[0,1,2,3].map(i => (
+        {[0,1,2,3,4].map(i => (
           <div className="tweak-row" key={i}>
             <label>Tramo {TIER_RULES[i].label} (CLP/g)</label>
             <input
