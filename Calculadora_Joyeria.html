@@ -2366,13 +2366,15 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
           const totalGrams  = Object.values(gramsMap).reduce((s,v) => s+(Number(v)||0), 0);
           return { category: LOTE_KEY, loteName: l.loteName || '', loteGramsMap: gramsMap, lotePrice: Number(l.lotePrice) || 0, grams: totalGrams };
         }
-        return { category: l.category, grams: Number(l.grams), customPrice: l.customPrice ? Number(l.customPrice) : undefined };
+        return { category: l.category, grams: Number(l.grams), customPrice: l.customPrice ? Number(l.customPrice) : null };
       }),
       tier: totals.tier, total: totals.total, totalWeight: totals.totalWeight,
       kilero, costsSnap, totalCost, profit,
     };
     try {
-      await window.__FB.saveQuote(fbUser.uid, entry);
+      // Limpiar undefined antes de guardar en Firestore
+      const cleanEntry = JSON.parse(JSON.stringify(entry, (k, v) => v === undefined ? null : v));
+      await window.__FB.saveQuote(fbUser.uid, cleanEntry);
       showToast("Cotización guardada ☁️");
     } catch(e) { showToast("Error al guardar: " + e.message); }
   };
