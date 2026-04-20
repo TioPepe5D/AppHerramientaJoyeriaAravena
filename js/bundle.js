@@ -259,9 +259,10 @@ const buildMessagePiezas = (validLines, prices) => {
   const lines = order.map(g => `${fmtGrams(sums.get(g.key))} | ${g.emoji} ${g.label}`);
   for (const u of ungrouped) lines.push(`${fmtGrams(u.grams)} | ${u.emoji} ${u.label}`);
   for (const ins of insumos) {
-    const cost = Number(ins.insumoCost) || Number(ins.insumoPrice) || 0;
-    const qty  = Number(ins.insumoQty)  || 1;
-    lines.push(`💎 ${qty} ${ins.insumoName || 'Insumo'}: $${fmtCLP(cost * qty)}`);
+    const cost  = Number(ins.insumoCost)  || Number(ins.insumoPrice) || 0;
+    const valor = Number(ins.insumoValor) || cost;
+    const qty   = Number(ins.insumoQty)   || 1;
+    lines.push(`💎 ${qty} ${ins.insumoName || 'Insumo'}: $${fmtCLP(valor * qty)}`);
   }
   for (const lot of lotes) {
     const gramsMap = lot.loteGramsMap || {};
@@ -304,9 +305,10 @@ function computeTotals(lines, prices){
 
   const regularTotal = calcRegularTotal(tier);
   const insumoTotal = lines.filter(l => l.category === INSUMO_KEY).reduce((s,l) => {
-    const cost = Number(l.insumoCost) || Number(l.insumoPrice) || 0;
-    const qty  = Number(l.insumoQty)  || 1;
-    return s + cost * qty;
+    const cost  = Number(l.insumoCost)  || Number(l.insumoPrice) || 0;
+    const valor = Number(l.insumoValor) || cost;
+    const qty   = Number(l.insumoQty)   || 1;
+    return s + valor * qty;
   }, 0);
   const loteTotal = lines.filter(l => l.category === LOTE_KEY).reduce((s,l) => s + (Number(l.lotePrice)||0), 0);
   const total = regularTotal + insumoTotal + loteTotal;
@@ -622,10 +624,11 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
             const tierPrice = cat ? cat.prices[totals.tier] : 0;
             const price = (!isInsumo && !isLote && line.customPrice) ? (Number(line.customPrice) || 0) : tierPrice;
             const g = Number(line.grams) || 0;
-            const insumoCostVal = Number(line.insumoCost) || Number(line.insumoPrice) || 0;
-            const insumoQtyVal  = Number(line.insumoQty)  || 1;
-            const lotePriceVal  = Number(line.lotePrice)  || 0;
-            const sub = isInsumo ? insumoCostVal * insumoQtyVal : isLote ? lotePriceVal : price * g;
+            const insumoCostVal  = Number(line.insumoCost)  || Number(line.insumoPrice) || 0;
+            const insumoValorVal = Number(line.insumoValor) || insumoCostVal;
+            const insumoQtyVal   = Number(line.insumoQty)   || 1;
+            const lotePriceVal   = Number(line.lotePrice)   || 0;
+            const sub = isInsumo ? insumoValorVal * insumoQtyVal : isLote ? lotePriceVal : price * g;
             return (
               <div className="line" key={line.id}>
                 <span className="line-idx">N°{String(i+1).padStart(2,'0')}</span>
@@ -675,6 +678,17 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                         <button className="remove" onClick={() => removeLine(line.id)} aria-label="Eliminar línea" disabled={lines.length === 1}>
                           <Icon name="x" size={14}/>
                         </button>
+                        <div className="field" style={{gridColumn:'1 / -1'}}>
+                          <label>Valor del insumo</label>
+                          <div className="control">
+                            <span className="unit" style={{marginLeft:0,marginRight:6}}>$</span>
+                            <input type="number" inputMode="numeric" min="0"
+                              value={line.insumoValor || ''}
+                              onChange={e => updateLine(line.id, { insumoValor: e.target.value })}
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
                         <div className="field" style={{gridColumn:'1 / -1'}}>
                           <label>Nombre del insumo</label>
                           <div className="control">
@@ -829,7 +843,7 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                 <div className="line-meta">
                   {isInsumo ? (
                     <>
-                      <span className="price-tag">Insumo · {insumoQtyVal} un. × ${fmtCLP(insumoCostVal)}</span>
+                      <span className="price-tag">Insumo · {insumoQtyVal} un. × ${fmtCLP(insumoValorVal)}</span>
                       <span className="subtotal">${fmtCLP(sub)}</span>
                     </>
                   ) : isLote ? (
@@ -1556,9 +1570,10 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
       concretada: true,
       lines: validLines.map(l => {
         if (l.category === INSUMO_KEY) {
-          const cost = Number(l.insumoCost) || Number(l.insumoPrice) || 0;
-          const qty  = Number(l.insumoQty)  || 1;
-          return { category: INSUMO_KEY, insumoName: l.insumoName || 'Insumo', insumoCost: cost, insumoQty: qty, insumoPrice: cost * qty, grams: 0 };
+          const cost  = Number(l.insumoCost)  || Number(l.insumoPrice) || 0;
+          const valor = Number(l.insumoValor) || cost;
+          const qty   = Number(l.insumoQty)   || 1;
+          return { category: INSUMO_KEY, insumoName: l.insumoName || 'Insumo', insumoCost: cost, insumoValor: valor, insumoQty: qty, insumoPrice: valor * qty, grams: 0 };
         }
         if (l.category === LOTE_KEY) {
           const gramsMap = l.loteGramsMap || {};
@@ -1589,6 +1604,7 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
       grams: (l.category === INSUMO_KEY || l.category === LOTE_KEY) ? '' : String(l.grams),
       insumoName: l.insumoName || '',
       insumoCost: l.insumoCost ? String(l.insumoCost) : (l.insumoPrice ? String(l.insumoPrice) : ''),
+      insumoValor: l.insumoValor ? String(l.insumoValor) : '',
       insumoQty: l.insumoQty ? String(l.insumoQty) : '1',
       loteName: l.loteName || '',
       loteGramsMap: l.loteGramsMap || {},

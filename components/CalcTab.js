@@ -57,10 +57,11 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
             const tierPrice = cat ? cat.prices[totals.tier] : 0;
             const price = (!isInsumo && !isLote && line.customPrice) ? (Number(line.customPrice) || 0) : tierPrice;
             const g = Number(line.grams) || 0;
-            const insumoCostVal = Number(line.insumoCost) || Number(line.insumoPrice) || 0;
-            const insumoQtyVal  = Number(line.insumoQty)  || 1;
-            const lotePriceVal  = Number(line.lotePrice)  || 0;
-            const sub = isInsumo ? insumoCostVal * insumoQtyVal : isLote ? lotePriceVal : price * g;
+            const insumoCostVal  = Number(line.insumoCost)  || Number(line.insumoPrice) || 0;
+            const insumoValorVal = Number(line.insumoValor) || insumoCostVal;
+            const insumoQtyVal   = Number(line.insumoQty)   || 1;
+            const lotePriceVal   = Number(line.lotePrice)   || 0;
+            const sub = isInsumo ? insumoValorVal * insumoQtyVal : isLote ? lotePriceVal : price * g;
             return (
               <div className="line" key={line.id}>
                 <span className="line-idx">N°{String(i+1).padStart(2,'0')}</span>
@@ -110,6 +111,17 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                         <button className="remove" onClick={() => removeLine(line.id)} aria-label="Eliminar línea" disabled={lines.length === 1}>
                           <Icon name="x" size={14}/>
                         </button>
+                        <div className="field" style={{gridColumn:'1 / -1'}}>
+                          <label>Valor del insumo</label>
+                          <div className="control">
+                            <span className="unit" style={{marginLeft:0,marginRight:6}}>$</span>
+                            <input type="number" inputMode="numeric" min="0"
+                              value={line.insumoValor || ''}
+                              onChange={e => updateLine(line.id, { insumoValor: e.target.value })}
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
                         <div className="field" style={{gridColumn:'1 / -1'}}>
                           <label>Nombre del insumo</label>
                           <div className="control">
@@ -264,7 +276,7 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                 <div className="line-meta">
                   {isInsumo ? (
                     <>
-                      <span className="price-tag">Insumo · {insumoQtyVal} un. × ${fmtCLP(insumoCostVal)}</span>
+                      <span className="price-tag">Insumo · {insumoQtyVal} un. × ${fmtCLP(insumoValorVal)}</span>
                       <span className="subtotal">${fmtCLP(sub)}</span>
                     </>
                   ) : isLote ? (
