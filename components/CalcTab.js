@@ -126,6 +126,17 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                           <Icon name="x" size={14}/>
                         </button>
                         <div style={{gridColumn:'1 / -1', display:'flex', flexDirection:'column', gap:6}}>
+                          <div className="field">
+                            <label>Nombre del lote</label>
+                            <div className="control">
+                              <input type="text"
+                                value={line.loteName || ''}
+                                onChange={e => updateLine(line.id, { loteName: e.target.value })}
+                                placeholder="Ej. Lote 1, Navidad, etc."
+                              />
+                              <span className="unit">📦</span>
+                            </div>
+                          </div>
                           {LOTE_TYPES.map(t => (
                             <div key={t.key} style={{display:'grid', gridTemplateColumns:'90px 1fr', gap:6, alignItems:'center'}}>
                               <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 10px',background:'rgba(var(--surface-overlay-rgb),.4)',border:'1px solid var(--line)',borderRadius:8,fontFamily:'var(--mono)',fontSize:12,fontWeight:600,color:'var(--gold-2)',whiteSpace:'nowrap'}}>
@@ -133,37 +144,27 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                               </div>
                               <div className="control" style={{minHeight:40}}>
                                 <input
-                                  type="text"
-                                  value={(line.loteDescs || {})[t.key] || ''}
-                                  onChange={e => updateLine(line.id, { loteDescs: { ...(line.loteDescs||{}), [t.key]: e.target.value } })}
-                                  placeholder="Descripción…"
-                                  style={{fontSize:13}}
-                                />
-                              </div>
-                            </div>
-                          ))}
-                          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, marginTop:2}}>
-                            <div className="field">
-                              <label>Gramos</label>
-                              <div className="control">
-                                <input type="number" inputMode="decimal" min="0"
-                                  value={line.loteGrams || ''}
-                                  onChange={e => updateLine(line.id, { loteGrams: e.target.value })}
+                                  type="number"
+                                  inputMode="decimal"
+                                  min="0"
+                                  value={(line.loteGramsMap || {})[t.key] || ''}
+                                  onChange={e => updateLine(line.id, { loteGramsMap: { ...(line.loteGramsMap||{}), [t.key]: e.target.value } })}
                                   placeholder="0"
+                                  style={{fontSize:13}}
                                 />
                                 <span className="unit">g</span>
                               </div>
                             </div>
-                            <div className="field">
-                              <label>Precio</label>
-                              <div className="control">
-                                <span className="unit" style={{marginLeft:0,marginRight:4}}>$</span>
-                                <input type="number" inputMode="numeric" min="0"
-                                  value={line.lotePrice || ''}
-                                  onChange={e => updateLine(line.id, { lotePrice: e.target.value })}
-                                  placeholder="0"
-                                />
-                              </div>
+                          ))}
+                          <div className="field" style={{marginTop:2}}>
+                            <label>Precio</label>
+                            <div className="control">
+                              <span className="unit" style={{marginLeft:0,marginRight:4}}>$</span>
+                              <input type="number" inputMode="numeric" min="0"
+                                value={line.lotePrice || ''}
+                                onChange={e => updateLine(line.id, { lotePrice: e.target.value })}
+                                placeholder="0"
+                              />
                             </div>
                           </div>
                         </div>
@@ -266,7 +267,7 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                     </>
                   ) : isLote ? (
                     <>
-                      <span className="price-tag">Lote 📦{line.loteGrams ? ` · ${line.loteGrams}g` : ''} · precio fijo</span>
+                      <span className="price-tag">Lote 📦{line.loteName ? ` · ${line.loteName}` : ''}{Object.values(line.loteGramsMap||{}).reduce((s,v)=>s+(Number(v)||0),0) ? ` · ${Object.values(line.loteGramsMap||{}).reduce((s,v)=>s+(Number(v)||0),0)}g` : ''} · precio fijo</span>
                       <span className="subtotal">${fmtCLP(sub)}</span>
                     </>
                   ) : (

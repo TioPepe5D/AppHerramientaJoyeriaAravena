@@ -59,7 +59,7 @@ function HistoryTab({ history, prices, onDelete, onDuplicate, onShare, onToggleC
                     {l.category === INSUMO_KEY
                       ? <>{l.insumoName || 'Insumo'} 💎 <span style={{fontStyle:'normal',fontFamily:'var(--mono)',fontSize:11}}>${fmtCLP(l.insumoPrice || 0)}</span></>
                       : l.category === LOTE_KEY
-                      ? <>📦 Lote{l.loteGrams ? ` ${l.loteGrams}g` : ''} <span style={{fontStyle:'normal',fontFamily:'var(--mono)',fontSize:11}}>${fmtCLP(l.lotePrice || 0)}</span></>
+                      ? <>📦 Lote{l.loteName ? ` ${l.loteName}` : ''}{l.grams ? ` ${l.grams}g` : ''} <span style={{fontStyle:'normal',fontFamily:'var(--mono)',fontSize:11}}>${fmtCLP(l.lotePrice || 0)}</span></>
                       : <>{(prices[l.category] && prices[l.category].name) || l.category} <span style={{fontStyle:'normal',fontFamily:'var(--mono)',fontSize:11}}>{l.grams}g</span></>
                     }
                   </React.Fragment>

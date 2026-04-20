@@ -72,10 +72,12 @@ const buildMessagePiezas = (validLines, prices) => {
     lines.push(`💎 ${qty} ${ins.insumoName || 'Insumo'}: $${fmtCLP(cost * qty)}`);
   }
   for (const lot of lotes) {
-    const descs = lot.loteDescs || {};
-    const detalles = LOTE_TYPES.filter(t => descs[t.key]).map(t => `${t.emoji} ${t.label}: ${descs[t.key]}`).join(' · ');
-    const gramos = lot.loteGrams ? ` · ${lot.loteGrams}g` : '';
-    lines.push(`📦 Lote${gramos}${detalles ? '\n' + detalles : ''}: $${fmtCLP(Number(lot.lotePrice) || 0)}`);
+    const gramsMap = lot.loteGramsMap || {};
+    const totalGrams = Object.values(gramsMap).reduce((s,v) => s+(Number(v)||0), 0);
+    const detalles = LOTE_TYPES.filter(t => Number(gramsMap[t.key]) > 0).map(t => `${t.emoji} ${t.label}: ${gramsMap[t.key]}g`).join(' · ');
+    const nombre = lot.loteName ? ` · ${lot.loteName}` : '';
+    const gramos = totalGrams ? ` · ${totalGrams}g` : '';
+    lines.push(`📦 Lote${nombre}${gramos}${detalles ? '\n' + detalles : ''}: $${fmtCLP(Number(lot.lotePrice) || 0)}`);
   }
   return lines.join('\n');
 };

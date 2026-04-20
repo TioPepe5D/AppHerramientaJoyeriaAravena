@@ -39,15 +39,16 @@ function SalesList({ quotes, prices }){
                       );
                     }
                     if (l.category === LOTE_KEY) {
-                      const descs = l.loteDescs || {};
+                      const gramsMap = l.loteGramsMap || {};
+                      const totalGrams = Object.values(gramsMap).reduce((s,v) => s+(Number(v)||0), 0);
                       return (
                         <div key={i} style={{padding:'4px 0',fontSize:13,color:'var(--ink-dim)'}}>
                           <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-                            <span>📦 Lote{l.loteGrams ? ` · ${l.loteGrams}g` : ''}</span>
+                            <span>📦 Lote{l.loteName ? ` · ${l.loteName}` : ''}{totalGrams ? ` · ${totalGrams}g` : ''}</span>
                             <span style={{fontFamily:'var(--mono)',fontWeight:600,color:'var(--ink)'}}>${fmtCLP(l.lotePrice || 0)}</span>
                           </div>
-                          {LOTE_TYPES.filter(t => descs[t.key]).map(t => (
-                            <div key={t.key} style={{fontSize:11,color:'var(--ink-mute)',paddingLeft:8}}>{t.emoji} {t.label}: {descs[t.key]}</div>
+                          {LOTE_TYPES.filter(t => Number(gramsMap[t.key]) > 0).map(t => (
+                            <div key={t.key} style={{fontSize:11,color:'var(--ink-mute)',paddingLeft:8}}>{t.emoji} {t.label}: {gramsMap[t.key]}g</div>
                           ))}
                         </div>
                       );

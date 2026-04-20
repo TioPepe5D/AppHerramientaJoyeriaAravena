@@ -264,10 +264,12 @@ const buildMessagePiezas = (validLines, prices) => {
     lines.push(`💎 ${qty} ${ins.insumoName || 'Insumo'}: $${fmtCLP(cost * qty)}`);
   }
   for (const lot of lotes) {
-    const descs = lot.loteDescs || {};
-    const detalles = LOTE_TYPES.filter(t => descs[t.key]).map(t => `${t.emoji} ${t.label}: ${descs[t.key]}`).join(' · ');
-    const gramos = lot.loteGrams ? ` · ${lot.loteGrams}g` : '';
-    lines.push(`📦 Lote${gramos}${detalles ? '\n' + detalles : ''}: $${fmtCLP(Number(lot.lotePrice) || 0)}`);
+    const gramsMap = lot.loteGramsMap || {};
+    const totalGrams = Object.values(gramsMap).reduce((s,v) => s+(Number(v)||0), 0);
+    const detalles = LOTE_TYPES.filter(t => Number(gramsMap[t.key]) > 0).map(t => `${t.emoji} ${t.label}: ${gramsMap[t.key]}g`).join(' · ');
+    const nombre = lot.loteName ? ` · ${lot.loteName}` : '';
+    const gramos = totalGrams ? ` · ${totalGrams}g` : '';
+    lines.push(`📦 Lote${nombre}${gramos}${detalles ? '\n' + detalles : ''}: $${fmtCLP(Number(lot.lotePrice) || 0)}`);
   }
   return lines.join('\n');
 };
@@ -501,15 +503,16 @@ function SalesList({ quotes, prices }){
                       );
                     }
                     if (l.category === LOTE_KEY) {
-                      const descs = l.loteDescs || {};
+                      const gramsMap = l.loteGramsMap || {};
+                      const totalGrams = Object.values(gramsMap).reduce((s,v) => s+(Number(v)||0), 0);
                       return (
                         <div key={i} style={{padding:'4px 0',fontSize:13,color:'var(--ink-dim)'}}>
                           <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-                            <span>📦 Lote{l.loteGrams ? ` · ${l.loteGrams}g` : ''}</span>
+                            <span>📦 Lote{l.loteName ? ` · ${l.loteName}` : ''}{totalGrams ? ` · ${totalGrams}g` : ''}</span>
                             <span style={{fontFamily:'var(--mono)',fontWeight:600,color:'var(--ink)'}}>${fmtCLP(l.lotePrice || 0)}</span>
                           </div>
-                          {LOTE_TYPES.filter(t => descs[t.key]).map(t => (
-                            <div key={t.key} style={{fontSize:11,color:'var(--ink-mute)',paddingLeft:8}}>{t.emoji} {t.label}: {descs[t.key]}</div>
+                          {LOTE_TYPES.filter(t => Number(gramsMap[t.key]) > 0).map(t => (
+                            <div key={t.key} style={{fontSize:11,color:'var(--ink-mute)',paddingLeft:8}}>{t.emoji} {t.label}: {gramsMap[t.key]}g</div>
                           ))}
                         </div>
                       );
@@ -688,6 +691,17 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                           <Icon name="x" size={14}/>
                         </button>
                         <div style={{gridColumn:'1 / -1', display:'flex', flexDirection:'column', gap:6}}>
+                          <div className="field">
+                            <label>Nombre del lote</label>
+                            <div className="control">
+                              <input type="text"
+                                value={line.loteName || ''}
+                                onChange={e => updateLine(line.id, { loteName: e.target.value })}
+                                placeholder="Ej. Lote 1, Navidad, etc."
+                              />
+                              <span className="unit">📦</span>
+                            </div>
+                          </div>
                           {LOTE_TYPES.map(t => (
                             <div key={t.key} style={{display:'grid', gridTemplateColumns:'90px 1fr', gap:6, alignItems:'center'}}>
                               <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 10px',background:'rgba(var(--surface-overlay-rgb),.4)',border:'1px solid var(--line)',borderRadius:8,fontFamily:'var(--mono)',fontSize:12,fontWeight:600,color:'var(--gold-2)',whiteSpace:'nowrap'}}>
@@ -695,37 +709,27 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                               </div>
                               <div className="control" style={{minHeight:40}}>
                                 <input
-                                  type="text"
-                                  value={(line.loteDescs || {})[t.key] || ''}
-                                  onChange={e => updateLine(line.id, { loteDescs: { ...(line.loteDescs||{}), [t.key]: e.target.value } })}
-                                  placeholder="Descripción…"
-                                  style={{fontSize:13}}
-                                />
-                              </div>
-                            </div>
-                          ))}
-                          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, marginTop:2}}>
-                            <div className="field">
-                              <label>Gramos</label>
-                              <div className="control">
-                                <input type="number" inputMode="decimal" min="0"
-                                  value={line.loteGrams || ''}
-                                  onChange={e => updateLine(line.id, { loteGrams: e.target.value })}
+                                  type="number"
+                                  inputMode="decimal"
+                                  min="0"
+                                  value={(line.loteGramsMap || {})[t.key] || ''}
+                                  onChange={e => updateLine(line.id, { loteGramsMap: { ...(line.loteGramsMap||{}), [t.key]: e.target.value } })}
                                   placeholder="0"
+                                  style={{fontSize:13}}
                                 />
                                 <span className="unit">g</span>
                               </div>
                             </div>
-                            <div className="field">
-                              <label>Precio</label>
-                              <div className="control">
-                                <span className="unit" style={{marginLeft:0,marginRight:4}}>$</span>
-                                <input type="number" inputMode="numeric" min="0"
-                                  value={line.lotePrice || ''}
-                                  onChange={e => updateLine(line.id, { lotePrice: e.target.value })}
-                                  placeholder="0"
-                                />
-                              </div>
+                          ))}
+                          <div className="field" style={{marginTop:2}}>
+                            <label>Precio</label>
+                            <div className="control">
+                              <span className="unit" style={{marginLeft:0,marginRight:4}}>$</span>
+                              <input type="number" inputMode="numeric" min="0"
+                                value={line.lotePrice || ''}
+                                onChange={e => updateLine(line.id, { lotePrice: e.target.value })}
+                                placeholder="0"
+                              />
                             </div>
                           </div>
                         </div>
@@ -828,7 +832,7 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                     </>
                   ) : isLote ? (
                     <>
-                      <span className="price-tag">Lote 📦{line.loteGrams ? ` · ${line.loteGrams}g` : ''} · precio fijo</span>
+                      <span className="price-tag">Lote 📦{line.loteName ? ` · ${line.loteName}` : ''}{Object.values(line.loteGramsMap||{}).reduce((s,v)=>s+(Number(v)||0),0) ? ` · ${Object.values(line.loteGramsMap||{}).reduce((s,v)=>s+(Number(v)||0),0)}g` : ''} · precio fijo</span>
                       <span className="subtotal">${fmtCLP(sub)}</span>
                     </>
                   ) : (
@@ -966,7 +970,7 @@ function HistoryTab({ history, prices, onDelete, onDuplicate, onShare, onToggleC
                     {l.category === INSUMO_KEY
                       ? <>{l.insumoName || 'Insumo'} 💎 <span style={{fontStyle:'normal',fontFamily:'var(--mono)',fontSize:11}}>${fmtCLP(l.insumoPrice || 0)}</span></>
                       : l.category === LOTE_KEY
-                      ? <>📦 Lote{l.loteGrams ? ` ${l.loteGrams}g` : ''} <span style={{fontStyle:'normal',fontFamily:'var(--mono)',fontSize:11}}>${fmtCLP(l.lotePrice || 0)}</span></>
+                      ? <>📦 Lote{l.loteName ? ` ${l.loteName}` : ''}{l.grams ? ` ${l.grams}g` : ''} <span style={{fontStyle:'normal',fontFamily:'var(--mono)',fontSize:11}}>${fmtCLP(l.lotePrice || 0)}</span></>
                       : <>{(prices[l.category] && prices[l.category].name) || l.category} <span style={{fontStyle:'normal',fontFamily:'var(--mono)',fontSize:11}}>{l.grams}g</span></>
                     }
                   </React.Fragment>
@@ -1555,7 +1559,9 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
           return { category: INSUMO_KEY, insumoName: l.insumoName || 'Insumo', insumoCost: cost, insumoQty: qty, insumoPrice: cost * qty, grams: 0 };
         }
         if (l.category === LOTE_KEY) {
-          return { category: LOTE_KEY, loteDescs: l.loteDescs || {}, loteGrams: Number(l.loteGrams) || 0, lotePrice: Number(l.lotePrice) || 0, grams: Number(l.loteGrams) || 0 };
+          const gramsMap = l.loteGramsMap || {};
+          const totalGrams = Object.values(gramsMap).reduce((s,v) => s+(Number(v)||0), 0);
+          return { category: LOTE_KEY, loteName: l.loteName || '', loteGramsMap: gramsMap, lotePrice: Number(l.lotePrice) || 0, grams: totalGrams };
         }
         return { category: l.category, grams: Number(l.grams), customPrice: l.customPrice ? Number(l.customPrice) : undefined };
       }),
@@ -1582,8 +1588,8 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
       insumoName: l.insumoName || '',
       insumoCost: l.insumoCost ? String(l.insumoCost) : (l.insumoPrice ? String(l.insumoPrice) : ''),
       insumoQty: l.insumoQty ? String(l.insumoQty) : '1',
-      loteDescs: l.loteDescs || {},
-      loteGrams: l.loteGrams ? String(l.loteGrams) : '',
+      loteName: l.loteName || '',
+      loteGramsMap: l.loteGramsMap || {},
       lotePrice: l.lotePrice ? String(l.lotePrice) : '',
       customPrice: l.customPrice ? String(l.customPrice) : ''
     })));

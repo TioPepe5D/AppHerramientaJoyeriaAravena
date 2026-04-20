@@ -181,7 +181,9 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
           return { category: INSUMO_KEY, insumoName: l.insumoName || 'Insumo', insumoCost: cost, insumoQty: qty, insumoPrice: cost * qty, grams: 0 };
         }
         if (l.category === LOTE_KEY) {
-          return { category: LOTE_KEY, loteDescs: l.loteDescs || {}, loteGrams: Number(l.loteGrams) || 0, lotePrice: Number(l.lotePrice) || 0, grams: Number(l.loteGrams) || 0 };
+          const gramsMap = l.loteGramsMap || {};
+          const totalGrams = Object.values(gramsMap).reduce((s,v) => s+(Number(v)||0), 0);
+          return { category: LOTE_KEY, loteName: l.loteName || '', loteGramsMap: gramsMap, lotePrice: Number(l.lotePrice) || 0, grams: totalGrams };
         }
         return { category: l.category, grams: Number(l.grams), customPrice: l.customPrice ? Number(l.customPrice) : undefined };
       }),
@@ -208,8 +210,8 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
       insumoName: l.insumoName || '',
       insumoCost: l.insumoCost ? String(l.insumoCost) : (l.insumoPrice ? String(l.insumoPrice) : ''),
       insumoQty: l.insumoQty ? String(l.insumoQty) : '1',
-      loteDescs: l.loteDescs || {},
-      loteGrams: l.loteGrams ? String(l.loteGrams) : '',
+      loteName: l.loteName || '',
+      loteGramsMap: l.loteGramsMap || {},
       lotePrice: l.lotePrice ? String(l.lotePrice) : '',
       customPrice: l.customPrice ? String(l.customPrice) : ''
     })));
