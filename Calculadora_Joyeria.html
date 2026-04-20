@@ -1512,11 +1512,10 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                               </div>
                               <div className="control" style={{minHeight:40}}>
                                 <input
-                                  type="number"
+                                  type="text"
                                   inputMode="decimal"
-                                  min="0"
                                   value={(line.loteGramsMap || {})[t.key] || ''}
-                                  onChange={e => updateLine(line.id, { loteGramsMap: { ...(line.loteGramsMap||{}), [t.key]: e.target.value } })}
+                                  onChange={e => updateLine(line.id, { loteGramsMap: { ...(line.loteGramsMap||{}), [t.key]: e.target.value.replace(',', '.') } })}
                                   placeholder="0"
                                   style={{fontSize:13}}
                                 />
@@ -1557,12 +1556,10 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                       <label>Gramaje</label>
                       <div className="control">
                         <input
-                          type="number"
+                          type="text"
                           inputMode="decimal"
-                          step="0.01"
-                          min="0"
                           value={line.grams}
-                          onChange={e => updateLine(line.id, { grams: e.target.value })}
+                          onChange={e => updateLine(line.id, { grams: e.target.value.replace(',', '.') })}
                           placeholder="0"
                         />
                         <span className="unit">g</span>
