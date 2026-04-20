@@ -551,13 +551,13 @@ const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
 // ---------- Data ----------
 const DEFAULT_PRICES = {
-  "collar_pulsera_mujer_925": { "name": "Collar y Pul Mujer 💁🏼‍♀️", "material": "SL 925", "cost": 450, "costKilero": 400, "prices": [950, 950, 800, 650, 550] },
-  "collar_pulsera_hombre_925": { "name": "Collar y Pul Hombre 🙋🏻‍♂️", "material": "SL 925", "cost": 450, "costKilero": 400, "prices": [750, 750, 700, 500, 450] },
-  "aros_colgantes_925": { "name": "Aros y Colgantes ✨", "material": "SL 925", "cost": 650, "costKilero": 550, "prices": [1200, 1200, 1000, 900, 850] },
-  "anillos_925": { "name": "Anillos 💍", "material": "SL 925", "cost": 650, "costKilero": 550, "prices": [1500, 1500, 1250, 1100, 1000] },
-  "collar_pulsera_micro": { "name": "Collar y Pul Micro 💎", "material": "Micro", "cost": 650, "costKilero": 550, "prices": [1000, 1000, 900, 800, 750] },
-  "italiana_925": { "name": "Italiana 🇮🇹", "material": "925", "cost": 2000, "costKilero": 2000, "prices": [2750, 2750, 2500, 2250, 2000] },
-  "gf_18k": { "name": "GF 18 K ⚜️", "material": "GF 18K", "cost": 1400, "costKilero": 1300, "prices": [2500, 2500, 2250, 2000, 1800] }
+  "collar_pulsera_mujer_925": { "name": "Collar y Pul Mujer 💁🏼‍♀️", "material": "SL 925", "cost": 450, "costKilero": 400, "prices": [1900, 950, 800, 650, 550] },
+  "collar_pulsera_hombre_925": { "name": "Collar y Pul Hombre 🙋🏻‍♂️", "material": "SL 925", "cost": 450, "costKilero": 400, "prices": [1500, 750, 700, 500, 450] },
+  "aros_colgantes_925": { "name": "Aros y Colgantes ✨", "material": "SL 925", "cost": 650, "costKilero": 550, "prices": [3600, 1200, 1000, 900, 850] },
+  "anillos_925": { "name": "Anillos 💍", "material": "SL 925", "cost": 650, "costKilero": 550, "prices": [4500, 1500, 1250, 1100, 1000] },
+  "collar_pulsera_micro": { "name": "Collar y Pul Micro 💎", "material": "Micro", "cost": 650, "costKilero": 550, "prices": [2000, 1000, 900, 800, 750] },
+  "italiana_925": { "name": "Italiana 🇮🇹", "material": "925", "cost": 2000, "costKilero": 2000, "prices": [5500, 2750, 2500, 2250, 2000] },
+  "gf_18k": { "name": "GF 18 K ⚜️", "material": "GF 18K", "cost": 1400, "costKilero": 1300, "prices": [5000, 2500, 2250, 2000, 1800] }
 };
 
 const CATEGORY_ORDER = Object.keys(DEFAULT_PRICES);
@@ -571,7 +571,7 @@ const LOTE_TYPES = [
 ];
 
 const TIER_RULES = [
-  { label: "0",   desc: "Hasta $30.000 (sin descuento)" },
+  { label: "PU",  desc: "Precio unitario (pieza individual)" },
   { label: "I",   desc: "Supera $30.000" },
   { label: "II",  desc: "Supera $100.000" },
   { label: "III", desc: "Supera 500g" },
