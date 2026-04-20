@@ -1,0 +1,128 @@
+// ---------- Utils ----------
+const fmtCLP = (n) => {
+  if (!isFinite(n)) n = 0;
+  return new Intl.NumberFormat('es-CL', { maximumFractionDigits: 0 }).format(Math.round(n));
+};
+const fmtDate = (t) => {
+  const d = new Date(t);
+  return d.toLocaleDateString('es-CL', { day:'2-digit', month:'short' }).replace('.','') +
+         ' · ' + d.toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit' });
+};
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+const CATEGORY_EMOJI = {
+  collar_pulsera_mujer_925: "🇨🇱",
+  collar_pulsera_hombre_925: "🇨🇱",
+  aros_colgantes_925: "🇨🇱",
+  anillos_925: "🇨🇱",
+  collar_pulsera_micro: "🇨🇱",
+  italiana_925: "🇮🇹",
+  gf_18k: "☀️"
+};
+const emojiForCategory = (key, cat) => {
+  if (CATEGORY_EMOJI[key]) return CATEGORY_EMOJI[key];
+  const mat = (cat?.material || "").toUpperCase();
+  if (mat.includes("GF")) return "☀️";
+  if (mat === "925") return "🇮🇹";
+  return "🇨🇱";
+};
+
+const MESSAGE_GROUPS = [
+  { key: "collares", label: "Cadena", emoji: "🇨🇱",
+    categories: ["collar_pulsera_mujer_925", "collar_pulsera_hombre_925"] },
+  { key: "micro", label: "Micro", emoji: "🇨🇱",
+    categories: ["collar_pulsera_micro", "aros_colgantes_925", "anillos_925"] },
+  { key: "italiana", label: "Italiana 925", emoji: "🇮🇹",
+    categories: ["italiana_925"] },
+  { key: "gf", label: "GF 18K", emoji: "☀️",
+    categories: ["gf_18k"] }
+];
+const fmtGrams = (g) => {
+  const r = Math.round(g * 10) / 10;
+  return Number.isInteger(r) ? String(r) : r.toFixed(1);
+};
+const buildMessagePiezas = (validLines, prices) => {
+  const sums = new Map();
+  const order = [];
+  const ungrouped = [];
+  const insumos = [];
+  const lotes = [];
+  for (const l of validLines) {
+    if (l.category === INSUMO_KEY) { insumos.push(l); continue; }
+    if (l.category === LOTE_KEY)   { lotes.push(l);   continue; }
+    const grams = Number(l.grams) || 0;
+    const group = MESSAGE_GROUPS.find(g => g.categories.includes(l.category));
+    if (group) {
+      if (!sums.has(group.key)) { sums.set(group.key, 0); order.push(group); }
+      sums.set(group.key, sums.get(group.key) + grams);
+    } else {
+      const cat = prices[l.category];
+      ungrouped.push({
+        grams,
+        label: cat?.name || l.category,
+        emoji: emojiForCategory(l.category, cat)
+      });
+    }
+  }
+  const lines = order.map(g => `${fmtGrams(sums.get(g.key))} | ${g.emoji} ${g.label}`);
+  for (const u of ungrouped) lines.push(`${fmtGrams(u.grams)} | ${u.emoji} ${u.label}`);
+  for (const ins of insumos) {
+    const cost = Number(ins.insumoCost) || Number(ins.insumoPrice) || 0;
+    const qty  = Number(ins.insumoQty)  || 1;
+    lines.push(`💎 ${qty} ${ins.insumoName || 'Insumo'}: $${fmtCLP(cost * qty)}`);
+  }
+  for (const lot of lotes) {
+    const descs = lot.loteDescs || {};
+    const detalles = LOTE_TYPES.filter(t => descs[t.key]).map(t => `${t.emoji} ${t.label}: ${descs[t.key]}`).join(' · ');
+    const gramos = lot.loteGrams ? ` · ${lot.loteGrams}g` : '';
+    lines.push(`📦 Lote${gramos}${detalles ? '\n' + detalles : ''}: $${fmtCLP(Number(lot.lotePrice) || 0)}`);
+  }
+  return lines.join('\n');
+};
+
+// Index map: 0=T-0 (≤$30k), 1=T-I (>$30k), 2=T-II (>$100k), 3=T-III (>500g), 4=T-IV (>1000g)
+// El total final CON el descuento del tramo debe superar el umbral.
+// Si al aplicar T-II el total cae bajo $100k, se baja a T-I, etc.
+function computeTotals(lines, prices){
+  const regular = lines.filter(l => l.category !== INSUMO_KEY && l.category !== LOTE_KEY);
+  const totalWeight = regular.reduce((s,l) => s + (Number(l.grams)||0), 0);
+
+  const calcRegularTotal = (tierIdx) => regular.reduce((s,l) => {
+    const cat = prices[l.category];
+    if (!cat) return s;
+    const unitPrice = l.customPrice ? (Number(l.customPrice)||0) : (cat.prices[tierIdx]||0);
+    return s + unitPrice * (Number(l.grams)||0);
+  }, 0);
+
+  let tier;
+  // Peso tiene prioridad
+  if (totalWeight > 1000) tier = 4;
+  else if (totalWeight > 500) tier = 3;
+  else {
+    // Tramos por precio: el total AL precio del tramo debe superar el umbral
+    const totalAtII = calcRegularTotal(2);
+    const totalAtI  = calcRegularTotal(1);
+
+    if (totalAtII > 100000) tier = 2;
+    else if (totalAtI > 30000) tier = 1;
+    else tier = 0;
+  }
+
+  const regularTotal = calcRegularTotal(tier);
+  const insumoTotal = lines.filter(l => l.category === INSUMO_KEY).reduce((s,l) => {
+    const cost = Number(l.insumoCost) || Number(l.insumoPrice) || 0;
+    const qty  = Number(l.insumoQty)  || 1;
+    return s + cost * qty;
+  }, 0);
+  const loteTotal = lines.filter(l => l.category === LOTE_KEY).reduce((s,l) => s + (Number(l.lotePrice)||0), 0);
+  const total = regularTotal + insumoTotal + loteTotal;
+
+  let reason;
+  if (totalWeight > 1000) reason = `Peso total ${fmtCLP(totalWeight)}g supera 1.000g`;
+  else if (totalWeight > 500) reason = `Peso total ${fmtCLP(totalWeight)}g supera 500g`;
+  else if (tier === 2) reason = `Venta supera $100.000`;
+  else if (tier === 1) reason = `Venta supera $30.000`;
+  else reason = `Venta hasta $30.000 (sin descuento)`;
+
+  return { tier, total, totalWeight, reason };
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Joyería Aravena - Calculadora",
+  "short_name": "Joyería Aravena",
+  "description": "Calculadora de cotizaciones para Joyería Aravena",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05060a",
+  "theme_color": "#05060a",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
