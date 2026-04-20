@@ -643,6 +643,7 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                         </select>
                       </div>
                     </div>
+                    {isInsumo && (
                     <div className="field">
                       <label>Costo</label>
                       <div className="control">
@@ -657,6 +658,7 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                         />
                       </div>
                     </div>
+                    )}
                     {isInsumo ? (
                       <>
                         <div className="field">
