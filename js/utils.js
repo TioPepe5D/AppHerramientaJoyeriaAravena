@@ -91,9 +91,8 @@ const buildMessagePiezas = (validLines, prices) => {
   for (const u of ungrouped) lines.push(`${fmtGrams(u.grams)} | ${u.emoji} ${u.label}`);
   for (const ins of insumos) {
     const cost  = Number(ins.insumoCost)  || Number(ins.insumoPrice) || 0;
-    const valor = Number(ins.insumoValor) || cost;
     const qty   = Number(ins.insumoQty)   || 1;
-    lines.push(`💎 ${qty} ${ins.insumoName || 'Insumo'}: $${fmtCLP(valor * qty)}`);
+    lines.push(`💎 ${qty} ${ins.insumoName || 'Insumo'}: $${fmtCLP(cost * qty)}`);
   }
   return lines.join('\n');
 };

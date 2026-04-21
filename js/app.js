@@ -263,7 +263,10 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
   const shareQuote = async (q) => {
     const p = prices;
     const linesText = q.lines.map(l => {
-      if (l.category === INSUMO_KEY) return `• ${l.insumoName || 'Insumo'} 💎 — $${fmtCLP(l.insumoPrice || 0)}`;
+      if (l.category === INSUMO_KEY) {
+        const qty = Number(l.insumoQty) || 1;
+        return `• ${qty} ${l.insumoName || 'Insumo'} 💎 — $${fmtCLP(l.insumoPrice || 0)}`;
+      }
       if (l.category === LOTE_KEY) {
         const nombre = l.loteName ? l.loteName : 'Lote';
         return `• ${nombre} — $${fmtCLP(Number(l.lotePrice) || 0)}`;
