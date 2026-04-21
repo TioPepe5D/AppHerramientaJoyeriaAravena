@@ -12,12 +12,32 @@ const PCT_ATTENDANT = 0.35;
 const PCT_EMPRESA   = 0.30;
 
 const quoteCostAndProfit = (quote, prices) => {
-  if (typeof quote.profit === 'number' && typeof quote.totalCost === 'number') {
-    return { totalCost: quote.totalCost, profit: quote.profit };
-  }
-  // Fallback para cotizaciones antiguas sin snapshot
   let totalCost = 0;
   for (const l of (quote.lines || [])) {
+    if (l.category === INSUMO_KEY) {
+      const cost = Number(l.insumoCost) || Number(l.insumoPrice) || 0;
+      const qty  = Number(l.insumoQty)  || 1;
+      totalCost += cost * qty;
+      continue;
+    }
+    if (l.category === LOTE_KEY) {
+      const gramsMap = l.loteGramsMap || {};
+      const LOTE_CAT_MAP = {
+        cadena:   'collar_pulsera_mujer_925',
+        micro:    'collar_pulsera_micro',
+        italiana: 'italiana_925',
+        gf18k:    'gf_18k',
+      };
+      for (const [typeKey, catKey] of Object.entries(LOTE_CAT_MAP)) {
+        const g = Number(gramsMap[typeKey]) || 0;
+        if (g > 0) {
+          const snap = quote.costsSnap && quote.costsSnap[catKey];
+          const c = (typeof snap === 'number') ? snap : (Number(prices?.[catKey]?.cost) || 0);
+          totalCost += c * g;
+        }
+      }
+      continue;
+    }
     const g = Number(l.grams) || 0;
     const snap = quote.costsSnap && quote.costsSnap[l.category];
     const c = (typeof snap === 'number') ? snap : (Number(prices?.[l.category]?.cost) || 0);

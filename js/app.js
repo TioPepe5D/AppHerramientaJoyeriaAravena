@@ -167,7 +167,26 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
         const qty  = Number(l.insumoQty)  || 1;
         totalCost += cost * qty; continue;
       }
-      if (l.category === LOTE_KEY) { totalCost += Number(l.lotePrice) || 0; continue; }
+      if (l.category === LOTE_KEY) {
+        // El costo del lote se calcula por gramaje × costo de cada categoría
+        const gramsMap = l.loteGramsMap || {};
+        const LOTE_CAT_MAP = {
+          cadena:   'collar_pulsera_mujer_925',
+          micro:    'collar_pulsera_micro',
+          italiana: 'italiana_925',
+          gf18k:    'gf_18k',
+        };
+        let loteCost = 0;
+        for (const [typeKey, catKey] of Object.entries(LOTE_CAT_MAP)) {
+          const g = Number(gramsMap[typeKey]) || 0;
+          if (g > 0) {
+            const c = effectiveCost(prices[catKey], totals.tier);
+            loteCost += c * g;
+          }
+        }
+        totalCost += loteCost;
+        continue;
+      }
       const g = Number(l.grams) || 0;
       const c = effectiveCost(prices[l.category], totals.tier);
       costsSnap[l.category] = c;
@@ -245,8 +264,12 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
     const p = prices;
     const linesText = q.lines.map(l => {
       if (l.category === INSUMO_KEY) return `• ${l.insumoName || 'Insumo'} 💎 — $${fmtCLP(l.insumoPrice || 0)}`;
+      if (l.category === LOTE_KEY) {
+        const nombre = l.loteName ? l.loteName : 'Lote';
+        return `• ${nombre} — $${fmtCLP(Number(l.lotePrice) || 0)}`;
+      }
       const cat   = p[l.category];
-      const price = cat ? cat.prices[q.tier] : 0;
+      const price = l.customPrice ? Number(l.customPrice) : (cat ? cat.prices[q.tier] : 0);
       return `• ${cat ? cat.name : l.category} — ${l.grams}g × $${fmtCLP(price)} = $${fmtCLP(price * l.grams)}`;
     }).join('\n');
     const text =

@@ -41,15 +41,38 @@ const fmtGrams = (g) => {
   const r = Math.round(g * 10) / 10;
   return Number.isInteger(r) ? String(r) : r.toFixed(1);
 };
+// Mapa de tipo de lote → clave de grupo de mensaje
+const LOTE_GROUP_MAP = {
+  cadena:   'collares',
+  micro:    'micro',
+  italiana: 'italiana',
+  gf18k:    'gf',
+};
+
 const buildMessagePiezas = (validLines, prices) => {
   const sums = new Map();
   const order = [];
   const ungrouped = [];
   const insumos = [];
-  const lotes = [];
+
+  const addToGroup = (groupKey, grams) => {
+    const group = MESSAGE_GROUPS.find(g => g.key === groupKey);
+    if (!group) return;
+    if (!sums.has(group.key)) { sums.set(group.key, 0); order.push(group); }
+    sums.set(group.key, sums.get(group.key) + grams);
+  };
+
   for (const l of validLines) {
     if (l.category === INSUMO_KEY) { insumos.push(l); continue; }
-    if (l.category === LOTE_KEY)   { lotes.push(l);   continue; }
+    if (l.category === LOTE_KEY) {
+      // Los gramos de cada tipo del lote se suman al grupo correspondiente
+      const gramsMap = l.loteGramsMap || {};
+      for (const [typeKey, groupKey] of Object.entries(LOTE_GROUP_MAP)) {
+        const g = Number(gramsMap[typeKey]) || 0;
+        if (g > 0) addToGroup(groupKey, g);
+      }
+      continue;
+    }
     const grams = Number(l.grams) || 0;
     const group = MESSAGE_GROUPS.find(g => g.categories.includes(l.category));
     if (group) {
@@ -71,14 +94,6 @@ const buildMessagePiezas = (validLines, prices) => {
     const valor = Number(ins.insumoValor) || cost;
     const qty   = Number(ins.insumoQty)   || 1;
     lines.push(`💎 ${qty} ${ins.insumoName || 'Insumo'}: $${fmtCLP(valor * qty)}`);
-  }
-  for (const lot of lotes) {
-    const gramsMap = lot.loteGramsMap || {};
-    const totalGrams = Object.values(gramsMap).reduce((s,v) => s+(Number(v)||0), 0);
-    const detalles = LOTE_TYPES.filter(t => Number(gramsMap[t.key]) > 0).map(t => `${t.emoji} ${t.label}: ${gramsMap[t.key]}g`).join(' · ');
-    const nombre = lot.loteName ? ` · ${lot.loteName}` : '';
-    const gramos = totalGrams ? ` · ${totalGrams}g` : '';
-    lines.push(`📦 Lote${nombre}${gramos}${detalles ? '\n' + detalles : ''}: $${fmtCLP(Number(lot.lotePrice) || 0)}`);
   }
   return lines.join('\n');
 };
