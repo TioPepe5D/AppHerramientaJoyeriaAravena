@@ -26,8 +26,8 @@ const TIER_RULES = [
   { label: "PU",  desc: "Precio unitario (pieza individual)" },
   { label: "I",   desc: "Supera $30.000" },
   { label: "II",  desc: "Supera $100.000" },
-  { label: "III", desc: "Supera 500g" },
-  { label: "IV",  desc: "Supera 1.000g" },
+  { label: "III", desc: "Supera 499g" },
+  { label: "IV",  desc: "Supera 999g" },
 ];
 
 const LS_HISTORY   = "joya.history.v1";

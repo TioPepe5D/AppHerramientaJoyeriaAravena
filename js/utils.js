@@ -97,7 +97,7 @@ const buildMessagePiezas = (validLines, prices) => {
   return lines.join('\n');
 };
 
-// Index map: 0=T-0 (≤$30k), 1=T-I (>$30k), 2=T-II (>$100k), 3=T-III (>500g), 4=T-IV (>1000g)
+// Index map: 0=T-0 (≤$30k), 1=T-I (>$30k), 2=T-II (>$100k), 3=T-III (>499g), 4=T-IV (>999g)
 // El total final CON el descuento del tramo debe superar el umbral.
 // Si al aplicar T-II el total cae bajo $100k, se baja a T-I, etc.
 function computeTotals(lines, prices){
@@ -113,8 +113,8 @@ function computeTotals(lines, prices){
 
   let tier;
   // Peso tiene prioridad
-  if (totalWeight > 1000) tier = 4;
-  else if (totalWeight > 500) tier = 3;
+  if (totalWeight > 999) tier = 4;
+  else if (totalWeight > 499) tier = 3;
   else {
     // Tramos por precio: el total AL precio del tramo debe superar el umbral
     const totalAtII = calcRegularTotal(2);
@@ -136,8 +136,8 @@ function computeTotals(lines, prices){
   const total = regularTotal + insumoTotal + loteTotal;
 
   let reason;
-  if (totalWeight > 1000) reason = `Peso total ${fmtCLP(totalWeight)}g supera 1.000g`;
-  else if (totalWeight > 500) reason = `Peso total ${fmtCLP(totalWeight)}g supera 500g`;
+  if (totalWeight > 999) reason = `Peso total ${fmtCLP(totalWeight)}g supera 999g`;
+  else if (totalWeight > 499) reason = `Peso total ${fmtCLP(totalWeight)}g supera 499g`;
   else if (tier === 2) reason = `Venta supera $100.000`;
   else if (tier === 1) reason = `Venta supera $30.000`;
   else reason = `Venta hasta $30.000 (sin descuento)`;

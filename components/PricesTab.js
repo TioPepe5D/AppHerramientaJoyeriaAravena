@@ -42,8 +42,8 @@ function PricesTab({ prices, activeTier }){
             <li><span className="t">T-0</span><span>Venta hasta $30.000 (sin descuento)</span></li>
             <li><span className="t">T-I</span><span>Venta supera $30.000</span></li>
             <li><span className="t">T-II</span><span>Venta supera $100.000</span></li>
-            <li><span className="t">T-III</span><span>Peso supera 500g</span></li>
-            <li><span className="t">T-IV</span><span>Peso supera 1.000g</span></li>
+            <li><span className="t">T-III</span><span>Peso supera 499g</span></li>
+            <li><span className="t">T-IV</span><span>Peso supera 999g</span></li>
           </ul>
         </div>
       </div>
