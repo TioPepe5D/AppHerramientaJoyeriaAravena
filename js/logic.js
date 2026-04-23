@@ -6,10 +6,7 @@ const effectiveCost = (cat, tier) => {
   const n = isKileroTier(tier) ? Number(cat.costKilero) : Number(cat.cost);
   return isFinite(n) ? n : (Number(cat.cost) || 0);
 };
-const EMPRESA = "Diego";
-const PCT_SCHEDULER = 0.35;
-const PCT_ATTENDANT = 0.35;
-const PCT_EMPRESA   = 0.30;
+// (EMPRESA, PCT_* definidos en data.js)
 
 const quoteCostAndProfit = (quote, prices) => {
   const BASE_COST = 1000; // Costo base fijo por bolsas/insumos
