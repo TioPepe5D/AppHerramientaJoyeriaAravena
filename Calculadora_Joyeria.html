@@ -1048,7 +1048,15 @@ const buildMessagePiezas = (validLines, prices) => {
 // Si al aplicar T-II el total cae bajo $100k, se baja a T-I, etc.
 function computeTotals(lines, prices){
   const regular = lines.filter(l => l.category !== INSUMO_KEY && l.category !== LOTE_KEY);
-  const totalWeight = regular.reduce((s,l) => s + (Number(l.grams)||0), 0);
+  const regularWeight = regular.reduce((s,l) => s + (Number(l.grams)||0), 0);
+  // Sumar gramos de lotes (loteGramsMap para líneas en calculadora, l.grams para líneas guardadas)
+  const loteWeight = lines.filter(l => l.category === LOTE_KEY).reduce((s,l) => {
+    if (l.loteGramsMap && Object.keys(l.loteGramsMap).length > 0) {
+      return s + Object.values(l.loteGramsMap).reduce((sum,v) => sum + (Number(v)||0), 0);
+    }
+    return s + (Number(l.grams)||0);
+  }, 0);
+  const totalWeight = regularWeight + loteWeight;
 
   const calcRegularTotal = (tierIdx) => regular.reduce((s,l) => {
     const cat = prices[l.category];
@@ -1884,7 +1892,11 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
             </div>
             <div className="row">
               <span className="k">Líneas</span>
-              <span className="v">{lines.filter(l => Number(l.grams) > 0).length} de {lines.length}</span>
+              <span className="v">{lines.filter(l => {
+                if (l.category === LOTE_KEY) return l.loteGramsMap ? Object.values(l.loteGramsMap).some(v => Number(v) > 0) : Number(l.grams) > 0;
+                if (l.category === INSUMO_KEY) return Number(l.insumoCost) > 0 || !!(l.insumoName && l.insumoName.trim());
+                return Number(l.grams) > 0;
+              }).length} de {lines.length}</span>
             </div>
             <div className="row grand">
               <span className="k">Total</span>
