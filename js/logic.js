@@ -19,7 +19,8 @@ const quoteCostAndProfit = (quote, prices) => {
   };
   for (const l of (quote.lines || [])) {
     if (l.category === INSUMO_KEY) {
-      const cost = Number(l.insumoCost) || Number(l.insumoPrice) || 0;
+      // Usar insumoCost (costo real del insumo), no insumoPrice (que es el valor cobrado al cliente)
+      const cost = Number(l.insumoCost) || 0;
       const qty  = Number(l.insumoQty)  || 1;
       tCost += cost * qty;
       continue;

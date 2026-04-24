@@ -31,10 +31,14 @@ function SalesList({ quotes, prices }){
                   <div className="eyebrow" style={{marginBottom:8}}>Detalle de productos</div>
                   {q.lines.map((l, i) => {
                     if (l.category === INSUMO_KEY) {
+                      // Mostrar valor de venta (insumoValor × qty), no insumoPrice que puede confundirse con costo
+                      const displayPrice = (l.insumoValor !== undefined && l.insumoValor !== null)
+                        ? Number(l.insumoValor) * (Number(l.insumoQty) || 1)
+                        : (l.insumoPrice || 0);
                       return (
                         <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',padding:'4px 0',fontSize:13,color:'var(--ink-dim)'}}>
                           <span>{l.insumoName || 'Insumo'} 💎</span>
-                          <span style={{fontFamily:'var(--mono)',fontWeight:600,color:'var(--ink)'}}>${fmtCLP(l.insumoPrice || 0)}</span>
+                          <span style={{fontFamily:'var(--mono)',fontWeight:600,color:'var(--ink)'}}>${fmtCLP(displayPrice)}</span>
                         </div>
                       );
                     }

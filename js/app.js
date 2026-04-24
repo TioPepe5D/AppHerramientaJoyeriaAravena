@@ -126,7 +126,7 @@ function App(){
   };
 
   const isValidLine = (l) => {
-    if (l.category === INSUMO_KEY) return Number(l.insumoCost) > 0 || Number(l.insumoPrice) > 0;
+    if (l.category === INSUMO_KEY) return Number(l.insumoCost) > 0 || !!(l.insumoName && l.insumoName.trim());
     if (l.category === LOTE_KEY)   return Number(l.lotePrice) > 0;
     return Number(l.grams) > 0;
   };
@@ -201,9 +201,12 @@ Venta: $${fmtCLP(totals.total)}${totals.tier === 4 ? '\n(Precio Kilero)' : ''}`;
       userName: userProfile?.name || fbUser.email,
       lines: validLines.map(l => {
         if (l.category === INSUMO_KEY) {
-          const cost  = Number(l.insumoCost)  || Number(l.insumoPrice) || 0;
-          const valor = Number(l.insumoValor) || cost;
-          const qty   = Number(l.insumoQty)   || 1;
+          const cost  = Number(l.insumoCost) || 0;
+          // Si insumoValor fue ingresado (incluso como 0 = regalo), respetarlo; si no existe, usar cost
+          const valor = l.insumoValor !== '' && l.insumoValor !== undefined && l.insumoValor !== null
+            ? Number(l.insumoValor)
+            : cost;
+          const qty   = Number(l.insumoQty) || 1;
           return { category: INSUMO_KEY, insumoName: l.insumoName || 'Insumo', insumoCost: cost, insumoValor: valor, insumoQty: qty, insumoPrice: valor * qty, grams: 0 };
         }
         if (l.category === LOTE_KEY) {
