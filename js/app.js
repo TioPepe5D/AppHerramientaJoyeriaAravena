@@ -344,6 +344,9 @@ Total: $${fmtCLP(q.total)} CLP`;
         <button className="tab" role="tab" aria-selected={tab==='reports'} onClick={()=>setTab('reports')}>
           <Icon name="share" size={14}/> Reportes
         </button>
+        <button className="tab" role="tab" aria-selected={tab==='charts'}  onClick={()=>setTab('charts')}>
+          <span style={{fontSize:13}}>📊</span> Gráficos
+        </button>
         <button className="tab" role="tab" aria-selected={tab==='prices'}  onClick={()=>setTab('prices')}>
           <Icon name="list" size={14}/> Precios
         </button>
@@ -369,6 +372,9 @@ Total: $${fmtCLP(q.total)} CLP`;
       )}
       {tab === 'reports' && (
         <ReportsTab history={history} prices={prices} onToggleConcretada={toggleConcretada} />
+      )}
+      {tab === 'charts' && (
+        <ChartsTab history={history} prices={prices} />
       )}
       {tab === 'prices' && (
         <PricesTab prices={prices} activeTier={totals.tier} />
