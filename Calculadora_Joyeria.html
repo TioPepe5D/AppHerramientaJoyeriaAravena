@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8" />
@@ -2171,9 +2171,15 @@ function ReportsTab({ history, prices, onToggleConcretada }){
       }
     }
     const pagosByPerson = {};
+    const empresa30PorPagador = {}; // 30% de ganancia por quien cobró
     for (const q of periodQuotes) {
       const who = (q.pago||'').trim();
-      if (who) pagosByPerson[who] = (pagosByPerson[who]||0) + (Number(q.total)||0);
+      if (who) {
+        pagosByPerson[who] = (pagosByPerson[who]||0) + (Number(q.total)||0);
+        const { profit } = quoteCostAndProfit(q, prices);
+        const base = Math.max(0, profit);
+        empresa30PorPagador[who] = (empresa30PorPagador[who]||0) + Math.round(base * PCT_EMPRESA);
+      }
     }
     const rows = Object.entries(byPerson).map(([name,v]) => ({
       name, ...v, comision: v.agendado+v.atendido+v.empresa, pagado: pagosByPerson[name]||0,
@@ -2183,7 +2189,8 @@ function ReportsTab({ history, prices, onToggleConcretada }){
     const totalComisionEquipo = rows.reduce((s,r) => s+r.agendado+r.atendido, 0);
     const totalEmpresa        = rows.reduce((s,r) => s+r.empresa, 0);
     const totalPagos          = Object.values(pagosByPerson).reduce((s,v) => s+v, 0);
-    return { rows, totalVentas, totalCostos, totalGanancia, totalComisionEquipo, totalEmpresa, gramsByGroup, pagosByPerson, totalPagos };
+    const totalEmpresa30Rastreado = Object.values(empresa30PorPagador).reduce((s,v) => s+v, 0);
+    return { rows, totalVentas, totalCostos, totalGanancia, totalComisionEquipo, totalEmpresa, gramsByGroup, pagosByPerson, totalPagos, empresa30PorPagador, totalEmpresa30Rastreado };
   }, [periodQuotes, prices]);
 
   // ── exportar CSV ──
@@ -2333,32 +2340,6 @@ function ReportsTab({ history, prices, onToggleConcretada }){
             </div>
           </div>
 
-          {/* ── PAGA / RECIBE ── */}
-          <div style={{padding:'10px 14px 14px',borderTop:'1px solid var(--line)',marginTop:8}}>
-            <div className="eyebrow" style={{marginBottom:8,letterSpacing:'.18em'}}>⚖️ Paga (−) / Recibe (+)</div>
-            <div style={{display:'flex',flexDirection:'column',gap:4}}>
-              {(() => {
-                const names = [...new Set([...TEAM,...Object.keys(summary.pagosByPerson)])];
-                return names
-                  .map(name => {
-                    const row = summary.rows.find(r=>r.name===name);
-                    const comision = row?row.comision:0;
-                    const pagado   = summary.pagosByPerson[name]||0;
-                    return { name, comision, pagado, neto: comision-pagado };
-                  })
-                  .filter(x => x.comision>0||x.pagado>0)
-                  .sort((a,b) => b.neto-a.neto)
-                  .map(({name,neto}) => (
-                    <div key={name} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',padding:'5px 0',borderBottom:'1px dashed var(--line)',fontFamily:'var(--mono)',fontSize:13}}>
-                      <span style={{color:'var(--ink-dim)',fontWeight:600}}>{name}</span>
-                      <span style={{fontWeight:700,color:neto>0?'#4ade80':neto<0?'var(--danger)':'var(--ink-mute)'}}>
-                        {neto>0?'+':''}{neto!==0?`$${fmtCLP(neto)}`:'$0'}
-                      </span>
-                    </div>
-                  ));
-              })()}
-            </div>
-          </div>
         </div>
       )}
 
@@ -2380,12 +2361,9 @@ function ReportsTab({ history, prices, onToggleConcretada }){
               </div>
             ))}
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',padding:'8px 0 0',fontFamily:'var(--mono)'}}>
-              <span style={{fontSize:11,letterSpacing:'.14em',color:'var(--ink-mute)',textTransform:'uppercase'}}>Pagos totales registrados</span>
-              <span style={{fontSize:15,fontWeight:700,color:Math.abs(summary.totalPagos-summary.totalVentas)<1?'#4ade80':'var(--danger)'}}>
+              <span style={{fontSize:11,letterSpacing:'.14em',color:'var(--ink-mute)',textTransform:'uppercase'}}>Pagos registrados (campo pago)</span>
+              <span style={{fontSize:15,fontWeight:700,color:'var(--ink-dim)'}}>
                 ${fmtCLP(summary.totalPagos)}
-                {Math.abs(summary.totalPagos-summary.totalVentas)>1
-                  ? <span style={{fontSize:10,color:'var(--danger)',marginLeft:6}}>⚠ faltan ${fmtCLP(summary.totalVentas-summary.totalPagos)}</span>
-                  : <span style={{fontSize:10,color:'#4ade80',marginLeft:6}}>✓ cuadra</span>}
               </span>
             </div>
           </div>
