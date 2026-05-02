@@ -105,11 +105,14 @@ function ReportsTab({ history, prices, onToggleConcretada }){
   }, [periodQuotes, prices]);
 
   const exportCSV = () => {
-    const header=["Fecha","Cliente","Agendó","Atendió","Tramo","Venta","Costo","Ganancia","Comisión Agendó (35%)","Comisión Atendió (35%)","Comisión Empresa (30%)"];
+    const header=["Fecha","Cliente","Agendó","Atendió","Tramo","Gramos Total","G. Cadena","G. Micro","G. Italiana","G. GF 18K","Venta","Costo","Ganancia","Comisión Agendó (35%)","Comisión Atendió (35%)","Comisión Empresa (30%)"];
+    const catToGroup={collar_pulsera_mujer_925:'cadena',collar_pulsera_hombre_925:'cadena',collar_pulsera_micro:'micro',aros_colgantes_925:'micro',anillos_925:'micro',italiana_925:'italiana',gf_18k:'gf18k'};
     const rows=periodQuotes.map(q=>{
       const total=Number(q.total)||0; const {totalCost,profit}=quoteCostAndProfit(q,prices); const base=Math.max(0,profit);
       const d=new Date(q.at); const fecha=d.toLocaleDateString('es-CL')+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
-      return [fecha,q.client||'',q.scheduler||EMPRESA,q.attendant||EMPRESA,TIER_RULES[q.tier]?TIER_RULES[q.tier].label:'',total,Math.round(totalCost),Math.round(profit),Math.round(base*PCT_SCHEDULER),Math.round(base*PCT_ATTENDANT),Math.round(base*PCT_EMPRESA)];
+      const gramsByGroup={cadena:0,micro:0,italiana:0,gf18k:0};
+      for(const l of(q.lines||[])){if(l.category===LOTE_KEY){const gm=l.loteGramsMap||{};for(const k of['cadena','micro','italiana','gf18k'])gramsByGroup[k]+=Number(gm[k])||0;}else if(catToGroup[l.category])gramsByGroup[catToGroup[l.category]]+=Number(l.grams)||0;}
+      return [fecha,q.client||'',q.scheduler||EMPRESA,q.attendant||EMPRESA,TIER_RULES[q.tier]?TIER_RULES[q.tier].label:'',Number(q.totalWeight)||0,gramsByGroup.cadena,gramsByGroup.micro,gramsByGroup.italiana,gramsByGroup.gf18k,total,Math.round(totalCost),Math.round(profit),Math.round(base*PCT_SCHEDULER),Math.round(base*PCT_ATTENDANT),Math.round(base*PCT_EMPRESA)];
     });
     const esc=(v)=>{const s=String(v??'');return/[",;\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;};
     const csv=[header,...rows].map(r=>r.map(esc).join(';')).join('\r\n');
