@@ -112,7 +112,8 @@ function ReportsTab({ history, prices, onToggleConcretada }){
       const d=new Date(q.at); const fecha=d.toLocaleDateString('es-CL')+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
       const gramsByGroup={cadena:0,micro:0,italiana:0,gf18k:0};
       for(const l of(q.lines||[])){if(l.category===LOTE_KEY){const gm=l.loteGramsMap||{};for(const k of['cadena','micro','italiana','gf18k'])gramsByGroup[k]+=Number(gm[k])||0;}else if(catToGroup[l.category])gramsByGroup[catToGroup[l.category]]+=Number(l.grams)||0;}
-      return [fecha,q.client||'',q.scheduler||EMPRESA,q.attendant||EMPRESA,TIER_RULES[q.tier]?TIER_RULES[q.tier].label:'',Number(q.totalWeight)||0,gramsByGroup.cadena,gramsByGroup.micro,gramsByGroup.italiana,gramsByGroup.gf18k,total,Math.round(totalCost),Math.round(profit),Math.round(base*PCT_SCHEDULER),Math.round(base*PCT_ATTENDANT),Math.round(base*PCT_EMPRESA)];
+      const r1=(x)=>Math.round((x||0)*10)/10;
+      return [fecha,q.client||'',q.scheduler||EMPRESA,q.attendant||EMPRESA,TIER_RULES[q.tier]?TIER_RULES[q.tier].label:'',r1(q.totalWeight),r1(gramsByGroup.cadena),r1(gramsByGroup.micro),r1(gramsByGroup.italiana),r1(gramsByGroup.gf18k),total,Math.round(totalCost),Math.round(profit),Math.round(base*PCT_SCHEDULER),Math.round(base*PCT_ATTENDANT),Math.round(base*PCT_EMPRESA)];
     });
     const esc=(v)=>{const s=String(v??'');return/[",;\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;};
     const csv=[header,...rows].map(r=>r.map(esc).join(';')).join('\r\n');
