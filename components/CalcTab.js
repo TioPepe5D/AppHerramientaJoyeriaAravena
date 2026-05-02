@@ -233,6 +233,7 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                     {openPickerId === line.id && (
                       <div className="fade-in" style={{marginTop:4,border:'1px solid var(--line)',borderRadius:8,overflow:'hidden'}}>
                         {cat && cat.prices.map((p, i) => {
+                          if (i === 0) return null;
                           const isActive = line.customPrice ? Number(line.customPrice) === p : i === totals.tier;
                           return (
                             <button key={i} onClick={() => {

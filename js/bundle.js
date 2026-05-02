@@ -838,6 +838,7 @@ function CalcTab({ clientName, setClientName, pago, setPago, scheduler, setSched
                     {openPickerId === line.id && (
                       <div className="fade-in" style={{marginTop:4,border:'1px solid var(--line)',borderRadius:8,overflow:'hidden'}}>
                         {cat && cat.prices.map((p, i) => {
+                          if (i === 0) return null;
                           const isActive = line.customPrice ? Number(line.customPrice) === p : i === totals.tier;
                           return (
                             <button key={i} onClick={() => {
@@ -1751,9 +1752,6 @@ Total: $${fmtCLP(q.total)} CLP`;
         <button className="tab" role="tab" aria-selected={tab==='reports'} onClick={()=>setTab('reports')}>
           <Icon name="share" size={14}/> Reportes
         </button>
-        <button className="tab" role="tab" aria-selected={tab==='prices'} onClick={()=>setTab('prices')}>
-          <Icon name="list" size={14}/> Precios
-        </button>
       </nav>
 
       {tab === 'calc' && (
@@ -1778,9 +1776,6 @@ Total: $${fmtCLP(q.total)} CLP`;
       )}
       {tab === 'reports' && (
         <ReportsTab history={history} prices={prices} onToggleConcretada={toggleConcretada} />
-      )}
-      {tab === 'prices' && (
-        <PricesTab prices={prices} activeTier={totals.tier} />
       )}
 
       <div className={"toast" + (toast ? " show" : "")}>{toast}</div>

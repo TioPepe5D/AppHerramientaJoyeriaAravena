@@ -347,9 +347,6 @@ Total: $${fmtCLP(q.total)} CLP`;
         <button className="tab" role="tab" aria-selected={tab==='charts'}  onClick={()=>setTab('charts')}>
           <span style={{fontSize:13}}>📊</span> Gráficos
         </button>
-        <button className="tab" role="tab" aria-selected={tab==='prices'}  onClick={()=>setTab('prices')}>
-          <Icon name="list" size={14}/> Precios
-        </button>
       </nav>
 
       {tab === 'calc' && (
@@ -375,9 +372,6 @@ Total: $${fmtCLP(q.total)} CLP`;
       )}
       {tab === 'charts' && (
         <ChartsTab history={history} prices={prices} />
-      )}
-      {tab === 'prices' && (
-        <PricesTab prices={prices} activeTier={totals.tier} />
       )}
 
       <div className={"toast" + (toast ? " show" : "")}>{toast}</div>
