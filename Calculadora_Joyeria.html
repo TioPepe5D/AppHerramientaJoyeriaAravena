@@ -1098,8 +1098,7 @@ function computeTotals(lines, prices){
     const totalAtI  = calcRegularTotal(1);
 
     if (totalAtII > 100000) tier = 2;
-    else if (totalAtI > 30000) tier = 1;
-    else tier = 0;
+    else tier = 1;
   }
 
   const regularTotal = calcRegularTotal(tier);
@@ -1119,8 +1118,7 @@ function computeTotals(lines, prices){
   if (totalWeight > 999) reason = `Peso total ${fmtCLP(totalWeight)}g supera 999g`;
   else if (totalWeight > 499) reason = `Peso total ${fmtCLP(totalWeight)}g supera 499g`;
   else if (tier === 2) reason = `Venta supera $100.000`;
-  else if (tier === 1) reason = `Venta supera $30.000`;
-  else reason = `Venta hasta $30.000 (sin descuento)`;
+  else reason = `Precio T-I`;
 
   return { tier, total, totalWeight, reason };
 }
